@@ -5,13 +5,15 @@ window.addEventListener("load", function () {
     canvas.height = window.innerHeight
 
     class Particle {
-        constructor(effect, x, y, color) {
+        constructor(effect, x, y, red, green, blue) {
             this.effect = effect
             this.x = Math.random() * this.effect.width
             this.y = Math.random() * this.effect.height
             this.originX = Math.floor(x)
             this.originY = Math.floor(y)
-            this.color = color
+            this.red = red
+            this.green = green
+            this.blue = blue
             this.size = this.effect.gap
             this.vx = 0
             this.vy = 0
@@ -23,17 +25,14 @@ window.addEventListener("load", function () {
             this.force = 0
             this.angle = 0
         }
-        draw(ctx) {
-            ctx.fillStyle = this.color
-            ctx.fillRect(this.x, this.y, this.size, this.size)
-        }
         update() {
             this.dx = this.effect.mouse.x - this.x
             this.dy = this.effect.mouse.y - this.y
             this.distance = this.dx ** 2 + this.dy ** 2
-            this.force = -this.effect.mouse.radius / this.distance
+            this.distance = Math.max(this.distance, 0.1)
 
             if (this.distance < this.effect.mouse.radius) {
+                this.force = -this.effect.mouse.radius / this.distance
                 this.angle = Math.atan2(this.dy, this.dx)
                 this.vx += this.force * Math.cos(this.angle)
                 this.vy += this.force * Math.sin(this.angle)
@@ -59,9 +58,9 @@ window.addEventListener("load", function () {
             this.centerY = this.height * 0.5
             this.x = this.centerX - this.image.width * 0.5
             this.y = this.centerY - this.image.height * 0.5
-            this.gap = 5
+            this.gap = 1
             this.mouse = {
-                radius: 8000,
+                radius: 50 ** 2,
                 x: undefined,
                 y: undefined,
             }
@@ -80,17 +79,31 @@ window.addEventListener("load", function () {
                     const green = pixels[index + 1]
                     const blue = pixels[index + 2]
                     const alpha = pixels[index + 3]
-                    const color = `rgb(${red},${green},${blue})`
                     if (alpha > 0) {
                         this.particlesArray.push(
-                            new Particle(this, x, y, color)
+                            new Particle(this, x, y, red, green, blue)
                         )
                     }
                 }
             }
         }
         draw(ctx) {
-            this.particlesArray.forEach((particle) => particle.draw(ctx))
+            const imageData = ctx.createImageData(this.width, this.height)
+            const data = imageData.data
+            this.particlesArray.forEach((particle) => {
+                const x = Math.round(particle.x)
+                const y = Math.round(particle.y)
+                for (let i = 0; i < this.gap; i++) {
+                    for (let j = 0; j < this.gap; j++) {
+                        const index = ((y + j) * this.width + (x + i)) * 4
+                        data[index] = particle.red
+                        data[index + 1] = particle.green
+                        data[index + 2] = particle.blue
+                        data[index + 3] = 255
+                    }
+                }
+            })
+            ctx.putImageData(imageData, 0, 0)
         }
         update() {
             this.particlesArray.forEach((particle) => particle.update())
@@ -101,10 +114,25 @@ window.addEventListener("load", function () {
     }
     const effect = new Effect(canvas.width, canvas.height)
     effect.init(ctx)
+    let frameTimes = [] // <<
+    let frameCount = 0 // <<
     function animate() {
+        const startTime = performance.now() // <<
         ctx.clearRect(0, 0, canvas.width, canvas.height)
         effect.draw(ctx)
         effect.update()
+        const endTime = performance.now() // <<
+        const frameTime = endTime - startTime // <<
+        frameTimes.push(frameTime) // <<
+        frameCount++ // <<
+        if (frameCount >= 60) {
+            const averageFrameTime =
+                frameTimes.reduce((sum, time) => sum + time, 0) /
+                frameTimes.length
+            // console.log(`Average frame time: ${averageFrameTime.toFixed(2)}ms`)
+            frameTimes = []
+            frameCount = 0
+        } // <<
         requestAnimationFrame(animate)
     }
     animate()
