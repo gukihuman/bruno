@@ -63,10 +63,17 @@ window.addEventListener("load", function () {
                 radius: 50 ** 2,
                 x: undefined,
                 y: undefined,
+                targetX: undefined,
+                targetY: undefined,
+                ease: 0.1,
             }
             window.addEventListener("mousemove", (event) => {
-                this.mouse.x = event.x
-                this.mouse.y = event.y
+                this.mouse.targetX = event.x
+                this.mouse.targetY = event.y
+            })
+            window.addEventListener("touchmove", (event) => {
+                this.mouse.targetX = event.touches[0].clientX
+                this.mouse.targetY = event.touches[0].clientY
             })
         }
         init(ctx) {
@@ -107,6 +114,14 @@ window.addEventListener("load", function () {
         }
         update() {
             this.particlesArray.forEach((particle) => particle.update())
+            if (!this.mouse.x && !this.mouse.y) {
+                this.mouse.x = this.mouse.targetX
+                this.mouse.y = this.mouse.targetY
+            }
+            this.mouse.x +=
+                (this.mouse.targetX - this.mouse.x) * this.mouse.ease
+            this.mouse.y +=
+                (this.mouse.targetY - this.mouse.y) * this.mouse.ease
         }
         warp() {
             this.particlesArray.forEach((particle) => particle.warp())
