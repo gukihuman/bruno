@@ -5,15 +5,13 @@ window.addEventListener("load", function () {
     canvas.height = window.innerHeight
 
     class Particle {
-        constructor(effect, x, y, red, green, blue) {
+        constructor(effect, x, y, colors) {
             this.effect = effect
             this.x = Math.random() * this.effect.width
             this.y = Math.random() * this.effect.height
             this.originX = Math.floor(x)
             this.originY = Math.floor(y)
-            this.red = red
-            this.green = green
-            this.blue = blue
+            this.colors = colors
             this.size = this.effect.gap
             this.vx = 0
             this.vy = 0
@@ -58,7 +56,7 @@ window.addEventListener("load", function () {
             this.centerY = this.height * 0.5
             this.x = this.centerX - this.image.width * 0.5
             this.y = this.centerY - this.image.height * 0.5
-            this.gap = 3
+            this.gap = 7
             this.mouse = {
                 fullRadius: 50 ** 2,
                 radius: 1,
@@ -82,14 +80,20 @@ window.addEventListener("load", function () {
             const pixels = ctx.getImageData(0, 0, this.width, this.height).data
             for (let y = 0; y < this.height; y += this.gap) {
                 for (let x = 0; x < this.width; x += this.gap) {
-                    const index = (y * this.width + x) * 4
-                    const red = pixels[index]
-                    const green = pixels[index + 1]
-                    const blue = pixels[index + 2]
-                    const alpha = pixels[index + 3]
-                    if (alpha > 0) {
+                    const i = (y * this.width + x) * 4
+                    const colors = []
+                    for (let yy = 0; yy < this.gap; yy++) {
+                        for (let xx = 0; xx < this.gap; xx++) {
+                            const ii = i + (yy * this.width + xx) * 4
+                            colors.push(pixels[ii])
+                            colors.push(pixels[ii + 1])
+                            colors.push(pixels[ii + 2])
+                            colors.push(pixels[ii + 3])
+                        }
+                    }
+                    if (colors[3] > 0) {
                         this.particlesArray.push(
-                            new Particle(this, x, y, red, green, blue)
+                            new Particle(this, x, y, colors)
                         )
                     }
                 }
@@ -111,11 +115,12 @@ window.addEventListener("load", function () {
                 }
                 for (let i = 0; i < this.gap; i++) {
                     for (let j = 0; j < this.gap; j++) {
-                        const index = ((y + j) * this.width + (x + i)) * 4
-                        data[index] = particle.red
-                        data[index + 1] = particle.green
-                        data[index + 2] = particle.blue
-                        data[index + 3] = 255
+                        const ii = ((y + j) * this.width + (x + i)) * 4
+                        let jj = (j * this.gap + i) * 4
+                        data[ii] = particle.colors[jj]
+                        data[ii + 1] = particle.colors[jj + 1]
+                        data[ii + 2] = particle.colors[jj + 2]
+                        data[ii + 3] = particle.colors[jj + 3]
                     }
                 }
             })
@@ -139,6 +144,8 @@ window.addEventListener("load", function () {
                 this.mouse.radius -= this.mouse.radius ** 0.5 * 2
             } else {
                 this.mouse.radius = 1
+                this.mouse.x = this.mouse.targetX
+                this.mouse.y = this.mouse.targetY
             }
             this.particlesArray.forEach((particle) => particle.update())
         }
