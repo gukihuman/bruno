@@ -101,6 +101,14 @@ window.addEventListener("load", function () {
             this.particlesArray.forEach((particle) => {
                 const x = Math.round(particle.x)
                 const y = Math.round(particle.y)
+                if (
+                    x < 0 ||
+                    x > this.width - this.gap ||
+                    y < 0 ||
+                    y > this.height - this.gap
+                ) {
+                    return
+                }
                 for (let i = 0; i < this.gap; i++) {
                     for (let j = 0; j < this.gap; j++) {
                         const index = ((y + j) * this.width + (x + i)) * 4
