@@ -58,9 +58,10 @@ window.addEventListener("load", function () {
             this.centerY = this.height * 0.5
             this.x = this.centerX - this.image.width * 0.5
             this.y = this.centerY - this.image.height * 0.5
-            this.gap = 1
+            this.gap = 3
             this.mouse = {
-                radius: 50 ** 2,
+                fullRadius: 50 ** 2,
+                radius: 1,
                 x: undefined,
                 y: undefined,
                 targetX: undefined,
@@ -113,15 +114,25 @@ window.addEventListener("load", function () {
             ctx.putImageData(imageData, 0, 0)
         }
         update() {
-            this.particlesArray.forEach((particle) => particle.update())
             if (!this.mouse.x && !this.mouse.y) {
                 this.mouse.x = this.mouse.targetX
                 this.mouse.y = this.mouse.targetY
             }
-            this.mouse.x +=
-                (this.mouse.targetX - this.mouse.x) * this.mouse.ease
-            this.mouse.y +=
-                (this.mouse.targetY - this.mouse.y) * this.mouse.ease
+            const dx = this.mouse.targetX - this.mouse.x
+            const dy = this.mouse.targetY - this.mouse.y
+            this.mouse.x += dx * this.mouse.ease
+            this.mouse.y += dy * this.mouse.ease
+            if (
+                (Math.abs(dx) > 1 || Math.abs(dy) > 1) &&
+                this.mouse.radius < this.mouse.fullRadius
+            ) {
+                this.mouse.radius += this.mouse.radius ** 0.5 * 5
+            } else if (this.mouse.radius > 1) {
+                this.mouse.radius -= this.mouse.radius ** 0.5 * 2
+            } else {
+                this.mouse.radius = 1
+            }
+            this.particlesArray.forEach((particle) => particle.update())
         }
         warp() {
             this.particlesArray.forEach((particle) => particle.warp())
