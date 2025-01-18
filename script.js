@@ -56,7 +56,7 @@ window.addEventListener("load", function () {
             this.centerY = this.height * 0.5
             this.x = this.centerX - this.image.width * 0.5
             this.y = this.centerY - this.image.height * 0.5
-            this.gap = 7
+            this.gap = 10
             this.mouse = {
                 fullRadius: 50 ** 2,
                 radius: 1,
@@ -105,16 +105,16 @@ window.addEventListener("load", function () {
             this.particlesArray.forEach((particle) => {
                 const x = Math.round(particle.x)
                 const y = Math.round(particle.y)
-                if (
-                    x < 0 ||
-                    x > this.width - this.gap ||
-                    y < 0 ||
-                    y > this.height - this.gap
-                ) {
-                    return
-                }
                 for (let i = 0; i < this.gap; i++) {
                     for (let j = 0; j < this.gap; j++) {
+                        if (
+                            x + i < 0 ||
+                            x + i >= this.width ||
+                            y + j < 0 ||
+                            y + j >= this.height
+                        ) {
+                            continue
+                        }
                         const ii = ((y + j) * this.width + (x + i)) * 4
                         let jj = (j * this.gap + i) * 4
                         data[ii] = particle.colors[jj]
