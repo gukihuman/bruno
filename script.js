@@ -1,8 +1,9 @@
 window.addEventListener("load", function () {
     const canvas = document.getElementsByTagName("canvas")[0]
     const ctx = canvas.getContext("2d")
-    canvas.width = window.innerWidth
-    canvas.height = window.innerHeight
+    const image = document.getElementById("image1")
+    canvas.width = image.offsetWidth
+    canvas.height = image.offsetHeight
 
     class Particle {
         constructor(effect, x, y, colors) {
