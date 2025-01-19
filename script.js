@@ -98,7 +98,7 @@ window.addEventListener("load", function () {
                 }
             }
             this.image.style.opacity = 0
-            document.getElementById("instagram").style.opacity = 100
+            document.getElementById("instagram").style.display = "flex"
             document.getElementById("touchHint").style.opacity = 100
         }
         draw(ctx) {
