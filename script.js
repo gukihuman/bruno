@@ -67,6 +67,7 @@ window.addEventListener("load", function () {
                 }
                 const svg = document.getElementById("touchHint")
                 if (svg) svg.remove()
+                document.getElementById("instagram").style.display = "flex"
             })
             window.addEventListener("touchmove", (event) => {
                 this.mouse.x = event.touches[0].clientX
@@ -76,6 +77,7 @@ window.addEventListener("load", function () {
                 }
                 const svg = document.getElementById("touchHint")
                 if (svg) svg.remove()
+                document.getElementById("instagram").style.display = "flex"
             })
         }
         init(ctx) {
@@ -98,7 +100,6 @@ window.addEventListener("load", function () {
                 }
             }
             this.image.style.opacity = 0
-            document.getElementById("instagram").style.display = "flex"
             document.getElementById("touchHint").style.opacity = 100
         }
         draw(ctx) {
