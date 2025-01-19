@@ -1,5 +1,5 @@
 window.addEventListener("load", function () {
-    const canvas = document.getElementById("canvas1")
+    const canvas = document.getElementsByTagName("canvas")[0]
     const ctx = canvas.getContext("2d")
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
@@ -52,29 +52,30 @@ window.addEventListener("load", function () {
             this.centerY = this.height * 0.5
             this.x = this.centerX - this.image.width * 0.5
             this.y = this.centerY - this.image.height * 0.5
-            this.gap = 10
+            this.gap = 15
             this.mouse = {
                 fullRadius: 50 ** 2,
                 radius: 1,
                 x: undefined,
                 y: undefined,
-                targetX: undefined,
-                targetY: undefined,
-                ease: 0.1,
             }
             window.addEventListener("mousemove", (event) => {
-                this.mouse.targetX = event.x
-                this.mouse.targetY = event.y
-            })
-            window.addEventListener("touchstart", (event) => {
-                this.mouse.x = event.touches[0].clientX
-                this.mouse.y = event.touches[0].clientY
-                this.mouse.targetX = event.touches[0].clientX
-                this.mouse.targetY = event.touches[0].clientY
+                this.mouse.x = event.x
+                this.mouse.y = event.y
+                if (this.mouse.radius < this.mouse.fullRadius) {
+                    this.mouse.radius += this.mouse.radius ** 0.5 * 5
+                }
+                const svg = document.getElementById("touchHint")
+                if (svg) svg.remove()
             })
             window.addEventListener("touchmove", (event) => {
-                this.mouse.targetX = event.touches[0].clientX
-                this.mouse.targetY = event.touches[0].clientY
+                this.mouse.x = event.touches[0].clientX
+                this.mouse.y = event.touches[0].clientY
+                if (this.mouse.radius < this.mouse.fullRadius) {
+                    this.mouse.radius += this.mouse.radius ** 0.5 * 5
+                }
+                const svg = document.getElementById("touchHint")
+                if (svg) svg.remove()
             })
         }
         init(ctx) {
@@ -129,26 +130,8 @@ window.addEventListener("load", function () {
             ctx.putImageData(imageData, 0, 0)
         }
         update() {
-            if (!this.mouse.x && !this.mouse.y) {
-                this.mouse.x = this.mouse.targetX
-                this.mouse.y = this.mouse.targetY
-            }
-            const dx = this.mouse.targetX - this.mouse.x
-            const dy = this.mouse.targetY - this.mouse.y
-            this.mouse.x += dx * this.mouse.ease
-            this.mouse.y += dy * this.mouse.ease
-            if (
-                (Math.abs(dx) > 1 || Math.abs(dy) > 1) &&
-                this.mouse.radius < this.mouse.fullRadius
-            ) {
-                this.mouse.radius += this.mouse.radius ** 0.5 * 5
-            } else if (this.mouse.radius > 1) {
-                this.mouse.radius -= this.mouse.radius ** 0.5 * 2
-            } else {
-                this.mouse.radius = 1
-                this.mouse.x = this.mouse.targetX
-                this.mouse.y = this.mouse.targetY
-            }
+            this.mouse.radius -= this.mouse.radius ** 0.5 * 2
+            if (this.mouse.radius < 1) this.mouse.radius = 1
             this.particlesArray.forEach((particle) => particle.update())
         }
     }

@@ -2,29 +2,42 @@
     margin: 0;
     padding: 0;
 }
-#canvas1 {
+canvas {
+    /* opacity: 0; */
     position: absolute;
-}
-.controls {
-    position: absolute;
-    z-index: 100;
 }
 img {
     display: none;
 }
-button {
-    padding: 10px;
-    font-size: 30px;
-    margin: 20px;
-    font-family: "Bangers", serif;
-    color: white;
-    background: black;
-    transition: 100ms;
-}
-button:hover {
-    color: black;
-    background: white;
-}
 body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
     background-color: #d3d3d3;
+}
+#instagram {
+    position: relative;
+    top: 160px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    font-family: "Lato", serif;
+    font-weight: 400;
+}
+#touchHint {
+    position: absolute;
+    z-index: 100;
+    animation: slide-in 1.5s ease-in-out infinite;
+}
+@keyframes slide-in {
+    0% {
+        transform: translateX(-20px);
+    }
+    50% {
+        transform: translateX(40px);
+    }
+    100% {
+        transform: translateX(-20px);
+    }
 }
