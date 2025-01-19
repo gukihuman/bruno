@@ -94,13 +94,12 @@ window.addEventListener("load", function () {
                             colors.push(pixels[ii + 3])
                         }
                     }
-                    if (colors[3] > 0) {
-                        this.particlesArray.push(
-                            new Particle(this, x, y, colors)
-                        )
-                    }
+                    this.particlesArray.push(new Particle(this, x, y, colors))
                 }
             }
+            this.image.style.opacity = 0
+            document.getElementById("instagram").style.opacity = 100
+            document.getElementById("touchHint").style.opacity = 100
         }
         draw(ctx) {
             const imageData = ctx.createImageData(this.width, this.height)
