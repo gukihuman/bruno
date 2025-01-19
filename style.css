@@ -7,9 +7,10 @@ canvas {
     position: absolute;
 }
 img {
+    /* display: none; */
     position: absolute;
-    opacity: 100;
-    object-fit: cover;
+    /* opacity: 100; */
+    /* object-fit: cover; */
     z-index: 50;
 }
 body {

@@ -1,9 +1,11 @@
 window.addEventListener("load", function () {
     const canvas = document.getElementsByTagName("canvas")[0]
     const ctx = canvas.getContext("2d")
-    const image = document.getElementById("image1")
-    canvas.width = image.offsetWidth
-    canvas.height = image.offsetHeight
+    // const image = document.getElementById("image1")
+    // canvas.width = image.offsetWidth
+    // canvas.height = image.offsetHeight
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
 
     class Particle {
         constructor(effect, x, y, colors) {
@@ -100,7 +102,8 @@ window.addEventListener("load", function () {
                     this.particlesArray.push(new Particle(this, x, y, colors))
                 }
             }
-            this.image.style.opacity = 0
+            // this.image.style.opacity = 0
+            this.image.style.display = "none"
             document.getElementById("touchHint").style.opacity = 100
         }
         draw(ctx) {
