@@ -7,10 +7,10 @@ window.addEventListener("load", function () {
     class Particle {
         constructor(effect, x, y, colors) {
             this.effect = effect
-            this.x = Math.random() * this.effect.width
-            this.y = Math.random() * this.effect.height
             this.originX = Math.floor(x)
             this.originY = Math.floor(y)
+            this.x = this.originX
+            this.y = this.originY
             this.colors = colors
             this.size = this.effect.gap
             this.vx = 0
@@ -41,10 +41,6 @@ window.addEventListener("load", function () {
             this.y +=
                 (this.vy *= this.friction) + (this.originY - this.y) * this.ease
         }
-        warp() {
-            this.x = Math.random() * this.effect.width
-            this.y = Math.random() * this.effect.height
-        }
     }
     class Effect {
         constructor(width, height) {
@@ -69,6 +65,12 @@ window.addEventListener("load", function () {
             window.addEventListener("mousemove", (event) => {
                 this.mouse.targetX = event.x
                 this.mouse.targetY = event.y
+            })
+            window.addEventListener("touchstart", (event) => {
+                this.mouse.x = event.touches[0].clientX
+                this.mouse.y = event.touches[0].clientY
+                this.mouse.targetX = event.touches[0].clientX
+                this.mouse.targetY = event.touches[0].clientY
             })
             window.addEventListener("touchmove", (event) => {
                 this.mouse.targetX = event.touches[0].clientX
@@ -149,9 +151,6 @@ window.addEventListener("load", function () {
             }
             this.particlesArray.forEach((particle) => particle.update())
         }
-        warp() {
-            this.particlesArray.forEach((particle) => particle.warp())
-        }
     }
     const effect = new Effect(canvas.width, canvas.height)
     effect.init(ctx)
@@ -177,9 +176,4 @@ window.addEventListener("load", function () {
         requestAnimationFrame(animate)
     }
     animate()
-
-    const warpButton = document.getElementById("warpButton")
-    warpButton.addEventListener("click", function () {
-        effect.warp()
-    })
 })
