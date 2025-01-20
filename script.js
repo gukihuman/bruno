@@ -1,3 +1,7 @@
+/*
+  ptcl - particle
+  pxl - pixel
+*/
 class PerfMonitor {
     constructor(interval) {
         this.frameTimes = []
@@ -31,7 +35,7 @@ class Particle {
         this.x = this.originX
         this.y = this.originY
         this.colors = colors
-        this.size = this.effect.gap
+        this.size = this.effect.ptclSize
         this.vx = 0
         this.vy = 0
         this.ease = 0.05
@@ -60,15 +64,15 @@ class Particle {
     }
 }
 class Effect {
-    constructor(width, height, image, hint) {
+    constructor(width, height, img, hint) {
         this.width = width
         this.height = height
-        this.particlesArray = []
-        this.image = image
+        this.ptclsArray = []
+        this.img = img
         this.hint = hint
-        this.x = this.width * 0.5 - this.image.width * 0.5
-        this.y = this.height * 0.5 - this.image.height * 0.5
-        this.gap = 15
+        this.imgX = this.width * 0.5 - this.img.width * 0.5
+        this.imgY = this.height * 0.5 - this.img.height * 0.5
+        this.ptclSize = 15
         this.mouse = {
             fullRadius: 50 ** 2,
             radius: 1,
@@ -93,57 +97,57 @@ class Effect {
         if (this.hint) this.hint.remove()
     }
     init(ctx) {
-        ctx.drawImage(this.image, this.x, this.y)
-        const pixels = ctx.getImageData(0, 0, this.width, this.height).data
-        for (let y = 0; y < this.height; y += this.gap) {
-            for (let x = 0; x < this.width; x += this.gap) {
-                const i = (y * this.width + x) * 4
+        ctx.drawImage(this.img, this.imgX, this.imgY)
+        const pxls = ctx.getImageData(0, 0, this.width, this.height).data
+        for (let ptclY = 0; ptclY < this.height; ptclY += this.ptclSize) {
+            for (let ptclX = 0; ptclX < this.width; ptclX += this.ptclSize) {
+                const ptclDataI = (ptclY * this.width + ptclX) * 4
                 const colors = []
-                for (let yy = 0; yy < this.gap; yy++) {
-                    for (let xx = 0; xx < this.gap; xx++) {
-                        const ii = i + (yy * this.width + xx) * 4
-                        colors.push(pixels[ii])
-                        colors.push(pixels[ii + 1])
-                        colors.push(pixels[ii + 2])
-                        colors.push(pixels[ii + 3])
+                for (let pxlY = 0; pxlY < this.ptclSize; pxlY++) {
+                    for (let pxlX = 0; pxlX < this.ptclSize; pxlX++) {
+                        const pxlI = ptclDataI + (pxlY * this.width + pxlX) * 4
+                        colors.push(pxls[pxlI])
+                        colors.push(pxls[pxlI + 1])
+                        colors.push(pxls[pxlI + 2])
+                        colors.push(pxls[pxlI + 3])
                     }
                 }
-                this.particlesArray.push(new Particle(this, x, y, colors))
+                this.ptclsArray.push(new Particle(this, ptclX, ptclY, colors))
             }
         }
-        this.image.style.display = "none"
+        this.img.style.display = "none"
     }
     draw(ctx) {
-        const imageData = ctx.createImageData(this.width, this.height)
-        const data = imageData.data
-        this.particlesArray.forEach((particle) => {
-            const x = Math.round(particle.x)
-            const y = Math.round(particle.y)
-            for (let i = 0; i < this.gap; i++) {
-                for (let j = 0; j < this.gap; j++) {
+        const imgData = ctx.createImageData(this.width, this.height)
+        this.ptclsArray.forEach((ptcl) => {
+            const ptclX = Math.round(ptcl.x)
+            const ptclY = Math.round(ptcl.y)
+            for (let pxlY = 0; pxlY < this.ptclSize; pxlY++) {
+                for (let pxlX = 0; pxlX < this.ptclSize; pxlX++) {
                     if (
-                        x + i < 0 ||
-                        x + i >= this.width ||
-                        y + j < 0 ||
-                        y + j >= this.height
+                        ptclX + pxlX < 0 ||
+                        ptclX + pxlX >= this.width ||
+                        ptclY + pxlY < 0 ||
+                        ptclY + pxlY >= this.height
                     ) {
                         continue
                     }
-                    const ii = ((y + j) * this.width + (x + i)) * 4
-                    let jj = (j * this.gap + i) * 4
-                    data[ii] = particle.colors[jj]
-                    data[ii + 1] = particle.colors[jj + 1]
-                    data[ii + 2] = particle.colors[jj + 2]
-                    data[ii + 3] = particle.colors[jj + 3]
+                    const pxlI =
+                        ((ptclY + pxlY) * this.width + (ptclX + pxlX)) * 4
+                    let colorI = (pxlY * this.ptclSize + pxlX) * 4
+                    imgData.data[pxlI] = ptcl.colors[colorI]
+                    imgData.data[pxlI + 1] = ptcl.colors[colorI + 1]
+                    imgData.data[pxlI + 2] = ptcl.colors[colorI + 2]
+                    imgData.data[pxlI + 3] = ptcl.colors[colorI + 3]
                 }
             }
         })
-        ctx.putImageData(imageData, 0, 0)
+        ctx.putImageData(imgData, 0, 0)
     }
     update() {
         this.mouse.radius -= this.mouse.radius ** 0.5 * 2
         if (this.mouse.radius < 1) this.mouse.radius = 1
-        this.particlesArray.forEach((particle) => particle.update())
+        this.ptclsArray.forEach((ptcl) => ptcl.update())
     }
 }
 window.addEventListener("load", function () {
@@ -151,17 +155,17 @@ window.addEventListener("load", function () {
     const ctx = canvas.getContext("2d")
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
-    const image = document.getElementById("image1")
+    const img = document.getElementById("img1")
     const hint = document.getElementById("touchHint")
-    const effect = new Effect(canvas.width, canvas.height, image, hint)
+    const effect = new Effect(canvas.width, canvas.height, img, hint)
     effect.init(ctx)
-    // const perfMonitor = new PerfMonitor(60)
+    // const perfMonitor = new PerfMonitor(60);
     function animate() {
-        // perfMonitor.start()
+        // perfMonitor.start();
         ctx.clearRect(0, 0, canvas.width, canvas.height)
         effect.draw(ctx)
         effect.update()
-        // perfMonitor.end()
+        // perfMonitor.end();
         requestAnimationFrame(animate)
     }
     animate()
