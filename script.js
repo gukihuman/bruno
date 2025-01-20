@@ -47,30 +47,27 @@ class Particle {
         this.dy = this.effect.mouse.y - this.y
         this.distance = this.dx ** 2 + this.dy ** 2
         this.distance = Math.max(this.distance, 0.1)
-
         if (this.distance < this.effect.mouse.radius) {
             this.force = -this.effect.mouse.radius / this.distance
             this.angle = Math.atan2(this.dy, this.dx)
             this.vx += this.force * Math.cos(this.angle)
             this.vy += this.force * Math.sin(this.angle)
         }
-
-        this.x +=
-            (this.vx *= this.friction) + (this.originX - this.x) * this.ease
-        this.y +=
-            (this.vy *= this.friction) + (this.originY - this.y) * this.ease
+        this.vx *= this.friction
+        this.vy *= this.friction
+        this.x += this.vx + (this.originX - this.x) * this.ease
+        this.y += this.vy + (this.originY - this.y) * this.ease
     }
 }
 class Effect {
-    constructor(width, height, image) {
+    constructor(width, height, image, hint) {
         this.width = width
         this.height = height
         this.particlesArray = []
         this.image = image
-        this.centerX = this.width * 0.5
-        this.centerY = this.height * 0.5
-        this.x = this.centerX - this.image.width * 0.5
-        this.y = this.centerY - this.image.height * 0.5
+        this.hint = hint
+        this.x = this.width * 0.5 - this.image.width * 0.5
+        this.y = this.height * 0.5 - this.image.height * 0.5
         this.gap = 15
         this.mouse = {
             fullRadius: 50 ** 2,
@@ -81,23 +78,19 @@ class Effect {
         window.addEventListener("mousemove", (event) => {
             this.mouse.x = event.x
             this.mouse.y = event.y
-            if (this.mouse.radius < this.mouse.fullRadius) {
-                this.mouse.radius += this.mouse.radius ** 0.5 * 5
-            }
-            const svg = document.getElementById("touchHint")
-            if (svg) svg.remove()
-            document.getElementById("instagram").style.display = "flex"
+            this.handleMove()
         })
         window.addEventListener("touchmove", (event) => {
             this.mouse.x = event.touches[0].clientX
             this.mouse.y = event.touches[0].clientY
-            if (this.mouse.radius < this.mouse.fullRadius) {
-                this.mouse.radius += this.mouse.radius ** 0.5 * 5
-            }
-            const svg = document.getElementById("touchHint")
-            if (svg) svg.remove()
-            document.getElementById("instagram").style.display = "flex"
+            this.handleMove()
         })
+    }
+    handleMove() {
+        if (this.mouse.radius < this.mouse.fullRadius) {
+            this.mouse.radius += this.mouse.radius ** 0.5 * 5
+        }
+        if (this.hint) this.hint.remove()
     }
     init(ctx) {
         ctx.drawImage(this.image, this.x, this.y)
@@ -118,9 +111,7 @@ class Effect {
                 this.particlesArray.push(new Particle(this, x, y, colors))
             }
         }
-        // this.image.style.opacity = 0
         this.image.style.display = "none"
-        document.getElementById("touchHint").style.opacity = 100
     }
     draw(ctx) {
         const imageData = ctx.createImageData(this.width, this.height)
@@ -161,7 +152,8 @@ window.addEventListener("load", function () {
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
     const image = document.getElementById("image1")
-    const effect = new Effect(canvas.width, canvas.height, image)
+    const hint = document.getElementById("touchHint")
+    const effect = new Effect(canvas.width, canvas.height, image, hint)
     effect.init(ctx)
     // const perfMonitor = new PerfMonitor(60)
     function animate() {
