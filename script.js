@@ -64,14 +64,13 @@ class Particle {
     }
 }
 class Effect {
-    constructor(width, height, img, hint) {
-        this.width = width
-        this.height = height
+    constructor(canvas, img, hint) {
+        this.canvas = canvas
+        this.width = this.canvas.width
+        this.height = this.canvas.height
         this.ptclsArray = []
         this.img = img
         this.hint = hint
-        this.imgX = this.width * 0.5 - this.img.width * 0.5
-        this.imgY = this.height * 0.5 - this.img.height * 0.5
         this.ptclSize = 15
         this.mouse = {
             fullRadius: 50 ** 2,
@@ -80,8 +79,8 @@ class Effect {
             y: undefined,
         }
         window.addEventListener("mousemove", (event) => {
-            this.mouse.x = event.x
-            this.mouse.y = event.y
+            this.mouse.x = event.clientX
+            this.mouse.y = event.clientY
             this.handleMove()
         })
         window.addEventListener("touchmove", (event) => {
@@ -91,13 +90,17 @@ class Effect {
         })
     }
     handleMove() {
+        const rect = this.canvas.getBoundingClientRect()
+        const adjust = this.canvas.width / rect.width
+        this.mouse.x = (this.mouse.x - rect.left) * adjust
+        this.mouse.y = (this.mouse.y - rect.top) * adjust
         if (this.mouse.radius < this.mouse.fullRadius) {
             this.mouse.radius += this.mouse.radius ** 0.5 * 5
         }
         if (this.hint) this.hint.remove()
     }
     init(ctx) {
-        ctx.drawImage(this.img, this.imgX, this.imgY)
+        ctx.drawImage(this.img, 0, 0)
         const pxls = ctx.getImageData(0, 0, this.width, this.height).data
         for (let ptclY = 0; ptclY < this.height; ptclY += this.ptclSize) {
             for (let ptclX = 0; ptclX < this.width; ptclX += this.ptclSize) {
@@ -115,7 +118,8 @@ class Effect {
                 this.ptclsArray.push(new Particle(this, ptclX, ptclY, colors))
             }
         }
-        this.img.style.display = "none"
+        this.canvas.style.display = "block"
+        this.img.remove()
     }
     draw(ctx) {
         const imgData = ctx.createImageData(this.width, this.height)
@@ -153,11 +157,11 @@ class Effect {
 window.addEventListener("load", function () {
     const canvas = document.getElementsByTagName("canvas")[0]
     const ctx = canvas.getContext("2d")
-    canvas.width = window.innerWidth
-    canvas.height = window.innerHeight
+    canvas.width = 457
+    canvas.height = 663
     const img = document.getElementById("img1")
     const hint = document.getElementById("touchHint")
-    const effect = new Effect(canvas.width, canvas.height, img, hint)
+    const effect = new Effect(canvas, img, hint)
     effect.init(ctx)
     // const perfMonitor = new PerfMonitor(60);
     function animate() {
