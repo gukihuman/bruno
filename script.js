@@ -100,7 +100,7 @@ class Effect {
         if (this.hint) this.hint.remove()
     }
     init(ctx) {
-        ctx.drawImage(this.img, 0, 0)
+        ctx.drawImage(this.img, 50, 50)
         const pxls = ctx.getImageData(0, 0, this.width, this.height).data
         for (let ptclY = 0; ptclY < this.height; ptclY += this.ptclSize) {
             for (let ptclX = 0; ptclX < this.width; ptclX += this.ptclSize) {
@@ -157,8 +157,8 @@ class Effect {
 window.addEventListener("load", function () {
     const canvas = document.getElementsByTagName("canvas")[0]
     const ctx = canvas.getContext("2d")
-    canvas.width = 457
-    canvas.height = 663
+    canvas.width = 557 // image 457
+    canvas.height = 763 // image 663
     const img = document.getElementById("img1")
     const hint = document.getElementById("touchHint")
     const effect = new Effect(canvas, img, hint)

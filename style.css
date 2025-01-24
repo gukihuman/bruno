@@ -2,12 +2,31 @@
     margin: 0;
     padding: 0;
 }
-canvas {
-    display: none;
+#canvasContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
     max-width: 100%;
+    overflow: hidden;
+}
+#backgroundText {
+    font-family: "Rubik", serif;
+    font-weight: 600;
+    font-size: 40px;
+    opacity: 20%;
+    transform: rotate(-20deg);
+    position: absolute;
+}
+canvas {
+    z-index: 25;
+    display: none;
+    max-width: 125%;
+    padding-bottom: 30px;
 }
 img {
-    max-width: 100%;
+    z-index: 25;
+    max-width: 125%;
+    padding-bottom: 30px;
 }
 body {
     display: flex;
@@ -28,8 +47,16 @@ body {
     bottom: 0px;
     align-items: center;
     justify-content: center;
-    font-family: "Lato", serif;
-    font-weight: 400;
+    z-index: 50;
+}
+#link {
+    font-family: "Rubik", serif;
+    text-decoration: none;
+    color: inherit;
+    transition: color 100ms ease;
+}
+#link:hover {
+    color: #6265ba;
 }
 #touchHint {
     position: absolute;
