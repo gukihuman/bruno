@@ -71,7 +71,7 @@ class Effect {
         this.ptclsArray = []
         this.img = img
         this.hint = hint
-        this.ptclSize = 15
+        this.ptclSize = 20
         this.mouse = {
             fullRadius: 50 ** 2,
             radius: 1,
