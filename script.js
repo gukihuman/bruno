@@ -1,14 +1,23 @@
 /*
-  ptcl - particle
-  pxl - pixel
+  part - particle
+  px - pixel
+  sq - squared
 */
+const EDGE = 60
+const WIDTH = 420 + EDGE * 2
+const HEIGHT = 660 + EDGE * 2
+const PART_SIZE = 20
+const SWITCH_THRESHOLD = 0.85
+const RADIUS = 50
+const RADIUS_GROWTH = 5
+const RADIUS_DECAY = 2
 window.addEventListener("load", function () {
     const effect = new Effect()
-    const performanceMonitor = new PerformanceMonitor(60)
+    // const monitor = new PerformanceMonitor(60)
     function animate() {
-        performanceMonitor.start()
+        // monitor.start()
         effect.update()
-        performanceMonitor.end()
+        // monitor.end()
         requestAnimationFrame(animate)
     }
     animate()
@@ -38,6 +47,121 @@ class PerformanceMonitor {
         }
     }
 }
+class Effect {
+    constructor() {
+        const imgs = document.getElementsByTagName("img")
+        this.imgsLength = imgs.length
+        this.nextImg = 1
+        this.switchTimestamp = 0
+        this.canvas = document.getElementsByTagName("canvas")[0]
+        this.canvas.width = WIDTH
+        this.canvas.height = HEIGHT
+        this.ctx = this.canvas.getContext("2d", { willReadFrequently: true })
+        this.partSet = []
+        this.particles = []
+        this.mouse = {
+            fullRadiusSq: RADIUS ** 2,
+            radiusSq: 1,
+            x: undefined,
+            y: undefined,
+        }
+        this.firstMoveDispatched = false
+        for (let i = 0; i < this.imgsLength; i++) {
+            this.partSet[i] = []
+            this.ctx.drawImage(imgs[0], EDGE, EDGE)
+            const pixels = this.ctx.getImageData(0, 0, WIDTH, HEIGHT).data
+            for (let partY = 0; partY < HEIGHT; partY += PART_SIZE) {
+                for (let partX = 0; partX < WIDTH; partX += PART_SIZE) {
+                    const partDataIndex = (partY * WIDTH + partX) * 4
+                    const colors = []
+                    let allAlphaTransparent = true
+                    for (let pxY = 0; pxY < PART_SIZE; pxY++) {
+                        for (let pxX = 0; pxX < PART_SIZE; pxX++) {
+                            const pxI = partDataIndex + (pxY * WIDTH + pxX) * 4
+                            if (pixels[pxI + 3] === 0) continue
+                            allAlphaTransparent = false
+                            colors.push(pixels[pxI])
+                            colors.push(pixels[pxI + 1])
+                            colors.push(pixels[pxI + 2])
+                            colors.push(pixels[pxI + 3])
+                        }
+                    }
+                    if (allAlphaTransparent) continue
+                    const partI = this.partSet[i].length
+                    this.partSet[i].push(
+                        new Particle(this, partX, partY, colors, partI)
+                    )
+                }
+            }
+            imgs[0].remove()
+        }
+
+        this.particles = this.partSet[0].map((particle) => particle.clone())
+        this.canvas.style.display = "block"
+        window.addEventListener("mousemove", this.handleMove.bind(this))
+        window.addEventListener("touchmove", this.handleMove.bind(this))
+        this.canvas.addEventListener("firstmove", () => {
+            document.getElementById("touchHint").remove()
+        })
+    }
+    handleMove(event) {
+        this.mouse.x = event.touches ? event.touches[0].clientX : event.clientX
+        this.mouse.y = event.touches ? event.touches[0].clientY : event.clientY
+        const clientRect = this.canvas.getBoundingClientRect()
+        const scaleRatio = WIDTH / clientRect.width
+        this.mouse.x = (this.mouse.x - clientRect.left) * scaleRatio
+        this.mouse.y = (this.mouse.y - clientRect.top) * scaleRatio
+        if (this.mouse.radiusSq < this.mouse.fullRadiusSq) {
+            this.mouse.radiusSq += this.mouse.radiusSq ** 0.5 * RADIUS_GROWTH
+        }
+        if (!this.firstMoveDispatched) {
+            this.canvas.dispatchEvent(new CustomEvent("firstmove"))
+            this.firstMoveDispatched = true
+        }
+    }
+    update() {
+        this.ctx.clearRect(0, 0, WIDTH, HEIGHT)
+        const imgData = this.ctx.createImageData(WIDTH, HEIGHT)
+        this.particles.forEach((particle) => {
+            const partX = Math.round(particle.x)
+            const partY = Math.round(particle.y)
+            for (let pxY = 0; pxY < PART_SIZE; pxY++) {
+                for (let pxX = 0; pxX < PART_SIZE; pxX++) {
+                    if (
+                        partX + pxX < 0 ||
+                        partX + pxX >= WIDTH ||
+                        partY + pxY < 0 ||
+                        partY + pxY >= HEIGHT
+                    ) {
+                        continue
+                    }
+                    const pxI = ((partY + pxY) * WIDTH + (partX + pxX)) * 4
+                    let colorI = (pxY * PART_SIZE + pxX) * 4
+                    imgData.data[pxI] = particle.colors[colorI]
+                    imgData.data[pxI + 1] = particle.colors[colorI + 1]
+                    imgData.data[pxI + 2] = particle.colors[colorI + 2]
+                    imgData.data[pxI + 3] = particle.colors[colorI + 3]
+                }
+            }
+        })
+        this.ctx.putImageData(imgData, 0, 0)
+        this.mouse.radiusSq -= this.mouse.radiusSq ** 0.5 * RADIUS_DECAY
+        if (this.mouse.radiusSq < 1) this.mouse.radiusSq = 1
+        let fromNextCounter = 0
+        this.particles.forEach((particle) => {
+            particle.update()
+            if (particle.fromNext) fromNextCounter++
+        })
+        if (fromNextCounter / this.particles.length > SWITCH_THRESHOLD) {
+            this.switchTimestamp = performance.now()
+            this.particles.forEach((particle) => {
+                particle.fromNext = false
+                particle.updateColor()
+            })
+            this.nextImg = (this.nextImg + 1) % this.imgsLength
+        }
+    }
+}
 class Particle {
     constructor(effect, x, y, colors, i) {
         this.effect = effect
@@ -63,12 +187,12 @@ class Particle {
         this.dy = this.effect.mouse.y - this.y
         this.distanceSquared = this.dx ** 2 + this.dy ** 2
         this.distanceSquared = Math.max(this.distanceSquared, 0.1)
-        if (this.distanceSquared < this.effect.mouse.radiusSquared) {
-            if (this.effect.transitionTimestamp + 1500 < performance.now()) {
+        if (this.distanceSquared < this.effect.mouse.radiusSq) {
+            if (this.effect.switchTimestamp + 1500 < performance.now()) {
                 this.updateColor()
                 this.fromNext = true
             }
-            this.force = -this.effect.mouse.radiusSquared / this.distanceSquared
+            this.force = -this.effect.mouse.radiusSq / this.distanceSquared
             this.angle = Math.atan2(this.dy, this.dx)
             this.vx += this.force * Math.cos(this.angle)
             this.vy += this.force * Math.sin(this.angle)
@@ -79,8 +203,7 @@ class Particle {
         this.y += this.vy + (this.originY - this.y) * this.ease
     }
     updateColor() {
-        this.colors =
-            this.effect.ptclsStorage[this.effect.nextImg][this.i].colors
+        this.colors = this.effect.partSet[this.effect.nextImg][this.i].colors
     }
     clone() {
         return new Particle(
@@ -90,140 +213,5 @@ class Particle {
             [...this.colors],
             this.i
         )
-    }
-}
-class Effect {
-    static PTCL_SIZE = 20
-    static SWITCH_THRESHOLD = 0.85
-    static RADIUS_GROWTH = 5
-    static RADIUS_DECAY = 2
-    constructor() {
-        this.canvas = document.getElementsByTagName("canvas")[0]
-        this.ctx = this.canvas.getContext("2d", { willReadFrequently: true })
-        this.edge = 60
-        this.canvas.width = 420 + this.edge * 2
-        this.canvas.height = 660 + this.edge * 2
-        this.w = this.canvas.width
-        this.h = this.canvas.height
-        this.ptclsStorage = []
-        this.ptclsArray = []
-        this.imgsLength = undefined
-        this.nextImg = 1
-        this.transitionTimestamp = 0
-        this.mouse = {
-            fullRadiusSquared: 50 ** 2,
-            radiusSquared: 1,
-            x: undefined,
-            y: undefined,
-        }
-        this.firstMoveDispatched = false
-        const imgs = document.getElementsByTagName("img")
-        this.imgsLength = imgs.length
-        for (let i = 0; i < this.imgsLength; i++) {
-            this.ptclsStorage[i] = []
-            this.ctx.drawImage(imgs[0], this.edge, this.edge)
-            const pxls = this.ctx.getImageData(0, 0, this.w, this.h).data
-            for (let ptclY = 0; ptclY < this.h; ptclY += Effect.PTCL_SIZE) {
-                for (let ptclX = 0; ptclX < this.w; ptclX += Effect.PTCL_SIZE) {
-                    const ptclDataI = (ptclY * this.w + ptclX) * 4
-                    const colors = []
-                    let allAlphaTransparent = true
-                    for (let pxlY = 0; pxlY < Effect.PTCL_SIZE; pxlY++) {
-                        for (let pxlX = 0; pxlX < Effect.PTCL_SIZE; pxlX++) {
-                            const pxlI = ptclDataI + (pxlY * this.w + pxlX) * 4
-                            if (pxls[pxlI + 3] === 0) continue
-                            allAlphaTransparent = false
-                            colors.push(pxls[pxlI])
-                            colors.push(pxls[pxlI + 1])
-                            colors.push(pxls[pxlI + 2])
-                            colors.push(pxls[pxlI + 3])
-                        }
-                    }
-                    if (allAlphaTransparent) continue
-                    this.ptclsStorage[i].push(
-                        new Particle(
-                            this,
-                            ptclX,
-                            ptclY,
-                            colors,
-                            this.ptclsStorage[i].length
-                        )
-                    )
-                }
-            }
-            imgs[0].remove()
-        }
-
-        this.ptclsArray = this.ptclsStorage[0].map((particle) =>
-            particle.clone()
-        )
-        this.canvas.style.display = "block"
-        window.addEventListener("mousemove", this.handleMove.bind(this))
-        window.addEventListener("touchmove", this.handleMove.bind(this))
-        this.canvas.addEventListener("firstmove", () => {
-            document.getElementById("touchHint").remove()
-        })
-    }
-    handleMove(event) {
-        this.mouse.x = event.touches ? event.touches[0].clientX : event.clientX
-        this.mouse.y = event.touches ? event.touches[0].clientY : event.clientY
-        const clientRect = this.canvas.getBoundingClientRect()
-        const scaleRatio = this.w / clientRect.width
-        this.mouse.x = (this.mouse.x - clientRect.left) * scaleRatio
-        this.mouse.y = (this.mouse.y - clientRect.top) * scaleRatio
-        if (this.mouse.radiusSquared < this.mouse.fullRadiusSquared) {
-            this.mouse.radiusSquared +=
-                this.mouse.radiusSquared ** 0.5 * Effect.RADIUS_GROWTH
-        }
-        if (!this.firstMoveDispatched) {
-            this.canvas.dispatchEvent(new CustomEvent("firstmove"))
-            this.firstMoveDispatched = true
-        }
-    }
-    update() {
-        this.ctx.clearRect(0, 0, this.w, this.h)
-        const imgData = this.ctx.createImageData(this.w, this.h)
-        this.ptclsArray.forEach((ptcl) => {
-            const ptclX = Math.round(ptcl.x)
-            const ptclY = Math.round(ptcl.y)
-            for (let pxlY = 0; pxlY < Effect.PTCL_SIZE; pxlY++) {
-                for (let pxlX = 0; pxlX < Effect.PTCL_SIZE; pxlX++) {
-                    if (
-                        ptclX + pxlX < 0 ||
-                        ptclX + pxlX >= this.w ||
-                        ptclY + pxlY < 0 ||
-                        ptclY + pxlY >= this.h
-                    ) {
-                        continue
-                    }
-                    const pxlI = ((ptclY + pxlY) * this.w + (ptclX + pxlX)) * 4
-                    let colorI = (pxlY * Effect.PTCL_SIZE + pxlX) * 4
-                    imgData.data[pxlI] = ptcl.colors[colorI]
-                    imgData.data[pxlI + 1] = ptcl.colors[colorI + 1]
-                    imgData.data[pxlI + 2] = ptcl.colors[colorI + 2]
-                    imgData.data[pxlI + 3] = ptcl.colors[colorI + 3]
-                }
-            }
-        })
-        this.ctx.putImageData(imgData, 0, 0)
-        this.mouse.radiusSquared -=
-            this.mouse.radiusSquared ** 0.5 * Effect.RADIUS_DECAY
-        if (this.mouse.radiusSquared < 1) this.mouse.radiusSquared = 1
-        let fromNextCounter = 0
-        this.ptclsArray.forEach((ptcl) => {
-            ptcl.update()
-            if (ptcl.fromNext) fromNextCounter++
-        })
-        if (
-            fromNextCounter / this.ptclsArray.length >
-            Effect.SWITCH_THRESHOLD
-        ) {
-            this.transitionTimestamp = performance.now()
-            this.ptclsArray.forEach((ptcl) => {
-                ptcl.fromNext = false
-                ptcl.updateColor()
-            })
-            this.nextImg = (this.nextImg + 1) % this.imgsLength
-        }
     }
 }
