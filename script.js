@@ -98,8 +98,13 @@ class Effect {
     static RADIUS_GROWTH = 5
     static RADIUS_DECAY = 2
     constructor() {
-        this.canvas = undefined
-        this.ctx = undefined
+        this.canvas = document.getElementsByTagName("canvas")[0]
+        this.ctx = this.canvas.getContext("2d", { willReadFrequently: true })
+        this.edge = 60
+        this.canvas.width = 420 + this.edge * 2
+        this.canvas.height = 660 + this.edge * 2
+        this.w = this.canvas.width
+        this.h = this.canvas.height
         this.ptclsStorage = []
         this.ptclsArray = []
         this.imgsLength = undefined
@@ -112,40 +117,20 @@ class Effect {
             y: undefined,
         }
         this.firstMoveDispatched = false
-        this.canvas = document.getElementsByTagName("canvas")[0]
-        this.ctx = this.canvas.getContext("2d", { willReadFrequently: true })
-        this.canvas.edge = 60
-        this.canvas.width = 420 + this.canvas.edge * 2
-        this.canvas.height = 660 + this.canvas.edge * 2
         const imgs = document.getElementsByTagName("img")
         this.imgsLength = imgs.length
         for (let i = 0; i < this.imgsLength; i++) {
             this.ptclsStorage[i] = []
-            this.ctx.drawImage(imgs[0], this.canvas.edge, this.canvas.edge)
-            const pxls = this.ctx.getImageData(
-                0,
-                0,
-                this.canvas.width,
-                this.canvas.height
-            ).data
-            for (
-                let ptclY = 0;
-                ptclY < this.canvas.height;
-                ptclY += Effect.PTCL_SIZE
-            ) {
-                for (
-                    let ptclX = 0;
-                    ptclX < this.canvas.width;
-                    ptclX += Effect.PTCL_SIZE
-                ) {
-                    const ptclDataI = (ptclY * this.canvas.width + ptclX) * 4
+            this.ctx.drawImage(imgs[0], this.edge, this.edge)
+            const pxls = this.ctx.getImageData(0, 0, this.w, this.h).data
+            for (let ptclY = 0; ptclY < this.h; ptclY += Effect.PTCL_SIZE) {
+                for (let ptclX = 0; ptclX < this.w; ptclX += Effect.PTCL_SIZE) {
+                    const ptclDataI = (ptclY * this.w + ptclX) * 4
                     const colors = []
                     let allAlphaTransparent = true
                     for (let pxlY = 0; pxlY < Effect.PTCL_SIZE; pxlY++) {
                         for (let pxlX = 0; pxlX < Effect.PTCL_SIZE; pxlX++) {
-                            const pxlI =
-                                ptclDataI +
-                                (pxlY * this.canvas.width + pxlX) * 4
+                            const pxlI = ptclDataI + (pxlY * this.w + pxlX) * 4
                             if (pxls[pxlI + 3] === 0) continue
                             allAlphaTransparent = false
                             colors.push(pxls[pxlI])
@@ -183,7 +168,7 @@ class Effect {
         this.mouse.x = event.touches ? event.touches[0].clientX : event.clientX
         this.mouse.y = event.touches ? event.touches[0].clientY : event.clientY
         const clientRect = this.canvas.getBoundingClientRect()
-        const scaleRatio = this.canvas.width / clientRect.width
+        const scaleRatio = this.w / clientRect.width
         this.mouse.x = (this.mouse.x - clientRect.left) * scaleRatio
         this.mouse.y = (this.mouse.y - clientRect.top) * scaleRatio
         if (this.mouse.radiusSquared < this.mouse.fullRadiusSquared) {
@@ -196,11 +181,8 @@ class Effect {
         }
     }
     update() {
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
-        const imgData = this.ctx.createImageData(
-            this.canvas.width,
-            this.canvas.height
-        )
+        this.ctx.clearRect(0, 0, this.w, this.h)
+        const imgData = this.ctx.createImageData(this.w, this.h)
         this.ptclsArray.forEach((ptcl) => {
             const ptclX = Math.round(ptcl.x)
             const ptclY = Math.round(ptcl.y)
@@ -208,15 +190,13 @@ class Effect {
                 for (let pxlX = 0; pxlX < Effect.PTCL_SIZE; pxlX++) {
                     if (
                         ptclX + pxlX < 0 ||
-                        ptclX + pxlX >= this.canvas.width ||
+                        ptclX + pxlX >= this.w ||
                         ptclY + pxlY < 0 ||
-                        ptclY + pxlY >= this.canvas.height
+                        ptclY + pxlY >= this.h
                     ) {
                         continue
                     }
-                    const pxlI =
-                        ((ptclY + pxlY) * this.canvas.width + (ptclX + pxlX)) *
-                        4
+                    const pxlI = ((ptclY + pxlY) * this.w + (ptclX + pxlX)) * 4
                     let colorI = (pxlY * Effect.PTCL_SIZE + pxlX) * 4
                     imgData.data[pxlI] = ptcl.colors[colorI]
                     imgData.data[pxlI + 1] = ptcl.colors[colorI + 1]
