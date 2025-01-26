@@ -66,8 +66,9 @@ class Particle {
     }
 }
 class Effect {
-    constructor(canvas, imgs, hint) {
+    constructor(canvas, outerSpace, imgs, hint) {
         this.canvas = canvas
+        this.outerSpace = outerSpace
         this.width = this.canvas.width
         this.height = this.canvas.height
         this.ptclsStorageArray = []
@@ -106,7 +107,7 @@ class Effect {
         const initialImgsLength = this.imgs.length
         for (let i = 0; i < initialImgsLength; i++) {
             this.ptclsStorageArray[i] = []
-            ctx.drawImage(this.imgs[0], 50, 50)
+            ctx.drawImage(this.imgs[0], this.outerSpace, this.outerSpace)
             const pxls = ctx.getImageData(0, 0, this.width, this.height).data
             for (let ptclY = 0; ptclY < this.height; ptclY += this.ptclSize) {
                 for (
@@ -116,16 +117,20 @@ class Effect {
                 ) {
                     const ptclDataI = (ptclY * this.width + ptclX) * 4
                     const colors = []
+                    let allAlphaTransparent = true
                     for (let pxlY = 0; pxlY < this.ptclSize; pxlY++) {
                         for (let pxlX = 0; pxlX < this.ptclSize; pxlX++) {
                             const pxlI =
                                 ptclDataI + (pxlY * this.width + pxlX) * 4
+                            if (pxls[pxlI + 3] === 0) continue
+                            allAlphaTransparent = false
                             colors.push(pxls[pxlI])
                             colors.push(pxls[pxlI + 1])
                             colors.push(pxls[pxlI + 2])
                             colors.push(pxls[pxlI + 3])
                         }
                     }
+                    if (allAlphaTransparent) continue
                     this.ptclsStorageArray[i].push(
                         new Particle(
                             this,
@@ -178,11 +183,12 @@ class Effect {
 window.addEventListener("load", function () {
     const canvas = document.getElementsByTagName("canvas")[0]
     const ctx = canvas.getContext("2d")
-    canvas.width = 557 // image 457
-    canvas.height = 763 // image 663
+    const outerSpace = 60
+    canvas.width = 420 + outerSpace * 2
+    canvas.height = 660 + outerSpace * 2
     const imgs = document.getElementsByTagName("img")
     const hint = document.getElementById("touchHint")
-    const effect = new Effect(canvas, imgs, hint)
+    const effect = new Effect(canvas, outerSpace, imgs, hint)
     effect.init(ctx)
     // const perfMonitor = new PerfMonitor(60);
     function animate() {
