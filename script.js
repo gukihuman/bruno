@@ -30,6 +30,7 @@ class PerfMonitor {
 class Particle {
     constructor(effect, x, y, colors, i) {
         this.effect = effect
+        this.fromNext = false
         this.originX = Math.floor(x)
         this.originY = Math.floor(y)
         this.x = this.originX
@@ -53,7 +54,10 @@ class Particle {
         this.distance = this.dx ** 2 + this.dy ** 2
         this.distance = Math.max(this.distance, 0.1)
         if (this.distance < this.effect.mouse.radius) {
-            this.colors = this.effect.ptclsStorageArray[1][this.i].colors
+            if (this.effect.transitionTimestamp + 1500 < performance.now()) {
+                this.updateColor()
+                this.fromNext = true
+            }
             this.force = -this.effect.mouse.radius / this.distance
             this.angle = Math.atan2(this.dy, this.dx)
             this.vx += this.force * Math.cos(this.angle)
@@ -64,16 +68,23 @@ class Particle {
         this.x += this.vx + (this.originX - this.x) * this.ease
         this.y += this.vy + (this.originY - this.y) * this.ease
     }
+    updateColor() {
+        this.colors =
+            this.effect.ptclsStorage[this.effect.nextImg][this.i].colors
+    }
 }
 class Effect {
     constructor(canvas, outerSpace, imgs, hint) {
         this.canvas = canvas
         this.outerSpace = outerSpace
-        this.width = this.canvas.width
-        this.height = this.canvas.height
-        this.ptclsStorageArray = []
+        this.width = canvas.width
+        this.height = canvas.height
+        this.ptclsStorage = []
         this.ptclsArray = []
         this.imgs = imgs
+        this.imgsLength = imgs.length
+        this.nextImg = 1
+        this.transitionTimestamp = 0
         this.hint = hint
         this.ptclSize = 20
         this.mouse = {
@@ -104,9 +115,8 @@ class Effect {
         if (this.hint) this.hint.remove()
     }
     init(ctx) {
-        const initialImgsLength = this.imgs.length
-        for (let i = 0; i < initialImgsLength; i++) {
-            this.ptclsStorageArray[i] = []
+        for (let i = 0; i < this.imgsLength; i++) {
+            this.ptclsStorage[i] = []
             ctx.drawImage(this.imgs[0], this.outerSpace, this.outerSpace)
             const pxls = ctx.getImageData(0, 0, this.width, this.height).data
             for (let ptclY = 0; ptclY < this.height; ptclY += this.ptclSize) {
@@ -131,20 +141,24 @@ class Effect {
                         }
                     }
                     if (allAlphaTransparent) continue
-                    this.ptclsStorageArray[i].push(
+                    this.ptclsStorage[i].push(
                         new Particle(
                             this,
                             ptclX,
                             ptclY,
                             colors,
-                            this.ptclsStorageArray[i].length
+                            this.ptclsStorage[i].length
                         )
                     )
                 }
             }
             this.imgs[0].remove()
         }
-        this.ptclsArray = this.ptclsStorageArray[0]
+        this.ptclsArray = this.ptclsStorage[0].map((ptcl) =>
+            Object.assign(Object.create(Object.getPrototypeOf(ptcl)), ptcl, {
+                colors: [...ptcl.colors],
+            })
+        )
         this.canvas.style.display = "block"
     }
     draw(ctx) {
@@ -177,12 +191,24 @@ class Effect {
     update() {
         this.mouse.radius -= this.mouse.radius ** 0.5 * 2
         if (this.mouse.radius < 1) this.mouse.radius = 1
-        this.ptclsArray.forEach((ptcl) => ptcl.update())
+        let fromNextCounter = 0
+        this.ptclsArray.forEach((ptcl) => {
+            ptcl.update()
+            if (ptcl.fromNext) fromNextCounter++
+        })
+        if (fromNextCounter / this.ptclsArray.length > 0.85) {
+            this.transitionTimestamp = performance.now()
+            this.ptclsArray.forEach((ptcl) => {
+                ptcl.fromNext = false
+                ptcl.updateColor()
+            })
+            this.nextImg = (this.nextImg + 1) % this.imgsLength
+        }
     }
 }
 window.addEventListener("load", function () {
     const canvas = document.getElementsByTagName("canvas")[0]
-    const ctx = canvas.getContext("2d")
+    const ctx = canvas.getContext("2d", { willReadFrequently: true })
     const outerSpace = 60
     canvas.width = 420 + outerSpace * 2
     canvas.height = 660 + outerSpace * 2
