@@ -1,14 +1,15 @@
 /*
-  part - part
+  part - particle
   px - pixel
   sq - squared
   img - image
 */
 const PART_SIZE = 5
-const EDGE = PART_SIZE * 2
+const EDGE = PART_SIZE * 10
 const WIDTH = 420 + EDGE * 2
 const HEIGHT = 660 + EDGE * 2
 const SWITCH_THRESHOLD = 0.85
+const SWITCH_TIME = 2000
 const RADIUS = 50
 const RADIUS_GROWTH = 5
 const RADIUS_DECAY = 2
@@ -201,7 +202,7 @@ class Particle {
         this.distanceSquared = this.dx ** 2 + this.dy ** 2
         this.distanceSquared = Math.max(this.distanceSquared, 0.1)
         if (this.distanceSquared < this.effect.mouse.radiusSq) {
-            if (this.effect.lastSwitchTime + 1500 < performance.now()) {
+            if (this.effect.lastSwitchTime + SWITCH_TIME < performance.now()) {
                 this.useNextImgColor()
                 this.usingNextImg = true
             }
