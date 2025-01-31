@@ -3,12 +3,13 @@
   px - pixel
   sq - squared
   img - image
+  el - element
 */
 const PART_SIZE = 5
 const EDGE = PART_SIZE * 10
 const WIDTH = 420 + EDGE * 2
 const HEIGHT = 660 + EDGE * 2
-const SWITCH_THRESHOLD = 0.85
+const SWITCH_THRESHOLD = 0.9
 const SWITCH_TIME = 2000
 const RADIUS = 50
 const RADIUS_GROWTH = 5
@@ -68,24 +69,24 @@ class Effect {
             y: undefined,
         }
         this.firstMoveDispatched = false
-        this.initParts(imgs)
-        this.setupEventListeners()
+        this._initParts(imgs)
+        this._setupEventListeners()
     }
-    initParts(imgs) {
+    _initParts(imgs) {
         for (let i = 0; i < this.totalImgs; i++) {
             this.ctx.drawImage(imgs[0], EDGE, EDGE)
             const pxs = this.ctx.getImageData(0, 0, WIDTH, HEIGHT).data
-            this.partSets[i] = this.processImg(pxs)
+            this.partSets[i] = this._processImg(pxs)
             imgs[0].remove()
         }
         this.parts = this.partSets[0].map((part) => part.clone())
         this.canvas.style.display = "block"
     }
-    processImg(pxs) {
+    _processImg(pxs) {
         const parts = []
         for (let y = 0; y < HEIGHT; y += PART_SIZE) {
             for (let x = 0; x < WIDTH; x += PART_SIZE) {
-                const partData = this.getPartData(pxs, x, y)
+                const partData = this._getPartData(pxs, x, y)
                 if (partData.isFullyTransparent) continue
                 parts.push(
                     new Particle(this, x, y, partData.colors, parts.length)
@@ -94,7 +95,7 @@ class Effect {
         }
         return parts
     }
-    getPartData(pxs, partX, partY) {
+    _getPartData(pxs, partX, partY) {
         const colors = []
         let isFullyTransparent = true
         const baseI = (partY * WIDTH + partX) * 4
@@ -108,14 +109,14 @@ class Effect {
         }
         return { colors, isFullyTransparent }
     }
-    setupEventListeners() {
-        window.addEventListener("mousemove", this.handleMove.bind(this))
-        window.addEventListener("touchmove", this.handleMove.bind(this))
+    _setupEventListeners() {
+        window.addEventListener("mousemove", this._handleMove.bind(this))
+        window.addEventListener("touchmove", this._handleMove.bind(this))
         this.canvas.addEventListener("firstmove", () => {
             document.getElementById("touchHint").remove()
         })
     }
-    handleMove(event) {
+    _handleMove(event) {
         this.mouse.x = event.touches ? event.touches[0].clientX : event.clientX
         this.mouse.y = event.touches ? event.touches[0].clientY : event.clientY
         const canvasRect = this.canvas.getBoundingClientRect()
@@ -134,14 +135,14 @@ class Effect {
         this.ctx.clearRect(0, 0, WIDTH, HEIGHT)
         const frameBuffer = this.ctx.createImageData(WIDTH, HEIGHT)
         this.parts.forEach((part) => {
-            this.drawParticle(part, frameBuffer)
+            this._drawParticle(part, frameBuffer)
             part.update()
         })
         this.ctx.putImageData(frameBuffer, 0, 0)
-        this.updateMouseRadius()
-        this.checkImgSwitch()
+        this._updateMouseRadius()
+        this._checkImgSwitch()
     }
-    drawParticle(part, frameBuffer) {
+    _drawParticle(part, frameBuffer) {
         const partX = Math.round(part.x)
         const partY = Math.round(part.y)
         for (let py = 0; py < PART_SIZE; py++) {
@@ -159,13 +160,14 @@ class Effect {
             }
         }
     }
-    updateMouseRadius() {
+    _updateMouseRadius() {
         this.mouse.radiusSq -= this.mouse.radiusSq ** 0.5 * RADIUS_DECAY
         if (this.mouse.radiusSq < 1) this.mouse.radiusSq = 1
     }
-    checkImgSwitch() {
+    _checkImgSwitch() {
         const usingNextCount = this.parts.filter((p) => p.usingNextImg).length
-        if (usingNextCount / this.parts.length > SWITCH_THRESHOLD) {
+        const progress = usingNextCount / this.parts.length / SWITCH_THRESHOLD
+        if (progress > 1) {
             this.lastSwitchTime = performance.now()
             this.parts.forEach((part) => {
                 part.useNextImgColor()
@@ -173,6 +175,8 @@ class Effect {
             })
             this.nextImgI = (this.nextImgI + 1) % this.totalImgs
         }
+        const progressEl = document.getElementById("progress")
+        progressEl.style.width = `${(progress * 100).toFixed(1)}%`
     }
 }
 class Particle {
