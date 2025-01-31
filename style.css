@@ -25,6 +25,7 @@
     height: 24px;
     z-index: 50;
     padding: 12px;
+    padding-top: 20px;
 }
 #progressBar {
     background-color: var(--dark);
@@ -44,9 +45,9 @@
 #percentage {
     color: white;
     position: absolute;
-    top: 50%;
+    top: 55%;
     left: 50%;
-    transform: translate(-30%, -50%);
+    transform: translate(-40%, -50%);
     font-family: "Rubik", serif;
     mix-blend-mode: difference; /* Add this line */
 }
