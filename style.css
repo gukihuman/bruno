@@ -1,5 +1,5 @@
 :root {
-    --light: #d3d3d3;
+    --light: #bfc5c5;
     --medium: #546977;
     --dark: #2a2e35;
 }
@@ -21,7 +21,7 @@
     justify-content: center;
     background-color: var(--light);
     top: 0px;
-    width: 100%;
+    width: calc(100% - 24px);
     height: 24px;
     z-index: 50;
     padding: 12px;
