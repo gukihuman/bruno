@@ -55,8 +55,11 @@ class Effect {
         const imgs = document.getElementsByTagName("img")
         this.totalImgs = imgs.length
         this.nextImgI = 1
-        this.lastSwitchTime = 0
+        this.lastSwitchTime = -Infinity
         this.canvas = document.getElementsByTagName("canvas")[0]
+        this.progressBarEl = document.getElementById("progressBar")
+        this.progressEl = document.getElementById("progress")
+        this.percentageEl = document.getElementById("percentage")
         this.canvas.width = WIDTH
         this.canvas.height = HEIGHT
         this.ctx = this.canvas.getContext("2d", { willReadFrequently: true })
@@ -167,7 +170,7 @@ class Effect {
     _checkImgSwitch() {
         const usingNextCount = this.parts.filter((p) => p.usingNextImg).length
         const progress = usingNextCount / this.parts.length / SWITCH_THRESHOLD
-        if (progress > 1) {
+        if (progress >= 0.99) {
             this.lastSwitchTime = performance.now()
             this.parts.forEach((part) => {
                 part.useNextImgColor()
@@ -175,8 +178,13 @@ class Effect {
             })
             this.nextImgI = (this.nextImgI + 1) % this.totalImgs
         }
-        const progressEl = document.getElementById("progress")
-        progressEl.style.width = `${(progress * 100).toFixed(1)}%`
+        if (this.lastSwitchTime + SWITCH_TIME < performance.now()) {
+            this.progressEl.style.width = `${(progress * 101).toFixed(1)}%`
+            this.percentageEl.innerText = `${(progress * 100).toFixed(0)}%`
+        } else {
+            this.progressEl.style.width = `100%`
+            this.percentageEl.innerText = "Готово!"
+        }
     }
 }
 class Particle {

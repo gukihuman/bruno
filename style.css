@@ -1,3 +1,8 @@
+:root {
+    --light: #d3d3d3;
+    --medium: #546977;
+    --dark: #2a2e35;
+}
 * {
     margin: 0;
     padding: 0;
@@ -10,19 +15,40 @@
     transform: rotate(-20deg);
     position: absolute;
 }
-#progressBar {
-    background-color: #d3d3d3;
-    width: 420px;
-    max-width: 100%;
-    height: 30px;
+#progressBackground {
     position: absolute;
+    display: flex;
+    justify-content: center;
+    background-color: var(--light);
     top: 0px;
-    z-index: 200;
+    width: 100%;
+    height: 24px;
+    z-index: 50;
+    padding: 12px;
+}
+#progressBar {
+    background-color: var(--dark);
+    width: 400px;
+    max-width: 100%;
+    height: 100%;
+    border-radius: 8px;
 }
 #progress {
-    background-color: #546977;
+    background-color: white;
     width: 0%;
     height: 100%;
+    border-radius: 8px;
+    border-color: var(--dark);
+    border-width: 4px;
+}
+#percentage {
+    color: white;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-30%, -50%);
+    font-family: "Rubik", serif;
+    mix-blend-mode: difference; /* Add this line */
 }
 #canvasContainer {
     display: flex;
@@ -45,7 +71,7 @@ img {
 }
 #img1 {
     display: block;
-    max-width: 101%;
+    max-width: 99%;
 }
 body {
     display: flex;
@@ -53,11 +79,11 @@ body {
     justify-content: center;
     align-items: center;
     height: 100vh;
-    background-color: #d3d3d3;
+    background-color: var(--light);
     overflow: hidden;
 }
 #instagram {
-    background-color: #d3d3d3;
+    background-color: var(--light);
     width: 100%;
     display: flex;
     gap: 6px;
@@ -75,7 +101,7 @@ body {
     transition: color 100ms ease;
 }
 #link:hover {
-    color: #6265ba;
+    color: var(--medium);
 }
 #touchHint {
     position: absolute;
