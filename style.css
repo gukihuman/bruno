@@ -38,8 +38,8 @@ body {
     padding-top: 16px;
 }
 #progressBar {
-    background-color: var(--dark);
-    outline: 5px solid var(--dark);
+    background-color: var(--medium);
+    outline: 5px solid var(--medium);
     width: 400px;
     max-width: 100%;
     height: 100%;

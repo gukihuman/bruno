@@ -12,6 +12,7 @@ const HEIGHT = 660 + EDGE * 2
 const SWITCH_THRESHOLD_SAND = 0.8
 const SWITCH_THRESHOLD_SNAKE = 0.9
 const SWITCH_TIME = 2000
+const SNAKE_CHANCE = 20
 const PIXEL_DISTANCE = 5
 const FORCE_MULTIPLIER = 0.7
 const FRICTION = 0.9
@@ -263,7 +264,7 @@ class Effect {
                 })
             } else {
                 this.parts.forEach((part) => {
-                    if (Math.random() < 1 / 20) part.useNextImgColor()
+                    if (Math.random() < 1 / SNAKE_CHANCE) part.useNextImgColor()
                 })
                 this.mouse.radiusSq = 1
                 this.mouse.maxRadiusSq = RADIUS ** 2
