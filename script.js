@@ -9,11 +9,15 @@ const PART_SIZE = 5
 const EDGE = PART_SIZE * 10
 const WIDTH = 420 + EDGE * 2
 const HEIGHT = 660 + EDGE * 2
-const SWITCH_THRESHOLD = 0.9
+const SWITCH_THRESHOLD = 0.8
 const SWITCH_TIME = 2000
 const RADIUS = 50
 const RADIUS_GROWTH = 5
 const RADIUS_DECAY = 2
+const EFFECT_TYPES = {
+    SAND: 0,
+    CHANGE: 1,
+}
 window.addEventListener("load", function () {
     const effect = new Effect()
     // const monitor = new PerformanceMonitor(60)
@@ -52,8 +56,8 @@ class PerformanceMonitor {
 }
 class Effect {
     constructor() {
-        const imgs = document.getElementsByTagName("img")
-        this.totalImgs = imgs.length
+        this.type = EFFECT_TYPES.SAND
+        this.imgs = document.getElementsByTagName("img")
         this.nextImgI = 1
         this.lastSwitchTime = -Infinity
         this.canvas = document.getElementsByTagName("canvas")[0]
@@ -68,22 +72,24 @@ class Effect {
         this.mouse = {
             maxRadiusSq: RADIUS ** 2,
             radiusSq: 1,
+            radiusGrowth: RADIUS_GROWTH,
             x: undefined,
             y: undefined,
         }
         this.firstMoveDispatched = false
-        this._initParts(imgs)
+        this._initParts()
         this._setupEventListeners()
     }
-    _initParts(imgs) {
-        for (let i = 0; i < this.totalImgs; i++) {
-            this.ctx.drawImage(imgs[0], EDGE, EDGE)
+    _initParts() {
+        for (let i = 0; i < this.imgs.length; i++) {
+            this.ctx.drawImage(this.imgs[i], EDGE, EDGE)
             const pxs = this.ctx.getImageData(0, 0, WIDTH, HEIGHT).data
             this.partSets[i] = this._processImg(pxs)
-            imgs[0].remove()
         }
         this.parts = this.partSets[0].map((part) => part.clone())
         this.canvas.style.display = "block"
+        this.imgs[0].style.display = "none"
+        this.imgs[1].style.display = "block"
     }
     _processImg(pxs) {
         const parts = []
@@ -127,7 +133,8 @@ class Effect {
         this.mouse.x = (this.mouse.x - canvasRect.left) * canvasScale
         this.mouse.y = (this.mouse.y - canvasRect.top) * canvasScale
         if (this.mouse.radiusSq < this.mouse.maxRadiusSq) {
-            this.mouse.radiusSq += this.mouse.radiusSq ** 0.5 * RADIUS_GROWTH
+            this.mouse.radiusSq +=
+                this.mouse.radiusSq ** 0.5 * this.mouse.radiusGrowth
         }
         if (!this.firstMoveDispatched) {
             this.canvas.dispatchEvent(new CustomEvent("firstmove"))
@@ -135,6 +142,7 @@ class Effect {
         }
     }
     update() {
+        this._checkImgSwitch()
         this.ctx.clearRect(0, 0, WIDTH, HEIGHT)
         const frameBuffer = this.ctx.createImageData(WIDTH, HEIGHT)
         this.parts.forEach((part) => {
@@ -143,7 +151,6 @@ class Effect {
         })
         this.ctx.putImageData(frameBuffer, 0, 0)
         this._updateMouseRadius()
-        this._checkImgSwitch()
     }
     _drawParticle(part, frameBuffer) {
         const partX = Math.round(part.x)
@@ -168,29 +175,47 @@ class Effect {
         if (this.mouse.radiusSq < 1) this.mouse.radiusSq = 1
     }
     _checkImgSwitch() {
-        const usingNextCount = this.parts.filter((p) => p.usingNextImg).length
+        const usingNextCount = this.parts.filter((p) => p.wasInteracted).length
         const progress = usingNextCount / this.parts.length / SWITCH_THRESHOLD
         if (progress >= 0.99) {
             this.lastSwitchTime = performance.now()
-            this.parts.forEach((part) => {
-                part.useNextImgColor()
-                part.usingNextImg = false
-            })
-            this.nextImgI = (this.nextImgI + 1) % this.totalImgs
+            this.parts.forEach((part) => (part.wasInteracted = false))
         }
+
         if (this.lastSwitchTime + SWITCH_TIME < performance.now()) {
             this.progressEl.style.width = `${(progress * 101).toFixed(1)}%`
             this.percentageEl.innerText = `${(progress * 100).toFixed(0)}%`
-        } else {
+            if (this.firstTime) {
+                this.parts.forEach((part) => {
+                    part.useNextImgColor()
+                    part.reset()
+                    part.wasInteracted = false
+                })
+                this.imgs[this.nextImgI].style.display = "none"
+                this.nextImgI = (this.nextImgI + 1) % this.imgs.length
+                this.imgs[this.nextImgI].style.display = "block"
+                this.mouse.radiusSq = 1
+                this.mouse.maxRadiusSq = RADIUS ** 2
+                this.mouse.radiusGrowth = RADIUS_GROWTH
+            }
+            this.firstTime = false
+        } else if (this.lastSwitchTime + SWITCH_TIME > performance.now()) {
             this.progressEl.style.width = `100%`
             this.percentageEl.innerText = "Готово!"
+            this.firstTime = true
+            this.mouse.maxRadiusSq = 400 ** 2
+            this.mouse.radiusGrowth = 7
+            this._handleMove({
+                clientX: window.innerWidth / 2 + 1,
+                clientY: window.innerHeight / 2 + 1,
+            })
         }
     }
 }
 class Particle {
     constructor(effect, x, y, colors, i) {
         this.effect = effect
-        this.usingNextImg = false
+        this.wasInteracted = false
         this.originX = Math.floor(x)
         this.originY = Math.floor(y)
         this.x = this.originX
@@ -199,8 +224,8 @@ class Particle {
         this.i = i
         this.vx = 0
         this.vy = 0
-        this.ease = 0.05
-        this.friction = 0.8
+        this.ease = 0.7
+        this.friction = 0.85
         this.dx = 0
         this.dy = 0
         this.distanceSquared = 0
@@ -215,8 +240,10 @@ class Particle {
         this.distanceSquared = Math.max(this.distanceSquared, 0.1)
         if (this.distanceSquared < this.effect.mouse.radiusSq) {
             if (this.effect.lastSwitchTime + SWITCH_TIME < performance.now()) {
-                this.useNextImgColor()
-                this.usingNextImg = true
+                this.wasInteracted = true
+                if (this.type === EFFECT_TYPES.CHANGE) {
+                    this.useNextImgColor()
+                }
             }
             this.force = -this.effect.mouse.radiusSq / this.distanceSquared
             this.angle = Math.atan2(this.dy, this.dx)
@@ -226,11 +253,21 @@ class Particle {
         // apply motion
         this.vx *= this.friction
         this.vy *= this.friction
-        this.x += this.vx + (this.originX - this.x) * this.ease
-        this.y += this.vy + (this.originY - this.y) * this.ease
+        this.x += this.vx * this.ease
+        this.y += this.vy * this.ease
+        if (this.type === EFFECT_TYPES.CHANGE) {
+            this.x += this.originX - this.x
+            this.y += this.originY - this.y
+        }
     }
     useNextImgColor() {
         this.colors = this.effect.partSets[this.effect.nextImgI][this.i].colors
+    }
+    reset() {
+        this.x = this.originX
+        this.y = this.originY
+        this.vx = 0
+        this.vy = 0
     }
     clone() {
         return new Particle(
