@@ -11,6 +11,9 @@ const WIDTH = 420 + EDGE * 2
 const HEIGHT = 660 + EDGE * 2
 const SWITCH_THRESHOLD = 0.8
 const SWITCH_TIME = 2000
+const PIXEL_DISTANCE = 8
+const FORCE_MULTIPLIER = 0.7
+const FRICTION = 0.9
 const RADIUS = 50
 const RADIUS_GROWTH = 5
 const RADIUS_GROWTH_2 = 15
@@ -176,7 +179,13 @@ class Effect {
         if (this.mouse.radiusSq < 1) this.mouse.radiusSq = 1
     }
     _checkImgSwitch() {
-        const usingNextCount = this.parts.filter((p) => p.wasInteracted).length
+        const usingNextCount = this.parts.filter((part) => {
+            if (!part.wasInteracted) return
+            return (
+                Math.abs(part.x - part.originX) > PIXEL_DISTANCE ||
+                Math.abs(part.y - part.originY) > PIXEL_DISTANCE
+            )
+        }).length
         const progress = usingNextCount / this.parts.length / SWITCH_THRESHOLD
         if (progress >= 0.99) {
             this.lastSwitchTime = performance.now()
@@ -226,7 +235,6 @@ class Particle {
         this.vx = 0
         this.vy = 0
         this.ease = 0.05
-        this.friction = 0.85
         this.dx = 0
         this.dy = 0
         this.distanceSquared = 0
@@ -247,13 +255,14 @@ class Particle {
                 }
             }
             this.force = -this.effect.mouse.radiusSq / this.distanceSquared
+            this.force *= Math.random() * FORCE_MULTIPLIER
             this.angle = Math.atan2(this.dy, this.dx)
             this.vx += this.force * Math.cos(this.angle)
             this.vy += this.force * Math.sin(this.angle)
         }
         // apply motion
-        this.vx *= this.friction
-        this.vy *= this.friction
+        this.vx *= FRICTION
+        this.vy *= FRICTION
         this.x += this.vx
         this.y += this.vy
         if (this.type === EFFECT_TYPES.CHANGE) {
