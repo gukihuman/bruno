@@ -13,6 +13,7 @@ const SWITCH_THRESHOLD = 0.8
 const SWITCH_TIME = 2000
 const RADIUS = 50
 const RADIUS_GROWTH = 5
+const RADIUS_GROWTH_2 = 10
 const RADIUS_DECAY = 2
 const EFFECT_TYPES = {
     SAND: 0,
@@ -20,11 +21,11 @@ const EFFECT_TYPES = {
 }
 window.addEventListener("load", function () {
     const effect = new Effect()
-    // const monitor = new PerformanceMonitor(60)
+    const monitor = new PerformanceMonitor(60)
     function animate() {
-        // monitor.start()
+        monitor.start()
         effect.update()
-        // monitor.end()
+        monitor.end()
         requestAnimationFrame(animate)
     }
     animate()
@@ -204,7 +205,7 @@ class Effect {
             this.percentageEl.innerText = "Готово!"
             this.firstTime = true
             this.mouse.maxRadiusSq = 400 ** 2
-            this.mouse.radiusGrowth = 7
+            this.mouse.radiusGrowth = RADIUS_GROWTH_2
             this._handleMove({
                 clientX: window.innerWidth / 2 + 1,
                 clientY: window.innerHeight / 2 + 1,
