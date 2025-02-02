@@ -9,7 +9,8 @@ const PART_SIZE = 5
 const EDGE = PART_SIZE * 10
 const WIDTH = 420 + EDGE * 2
 const HEIGHT = 660 + EDGE * 2
-const SWITCH_THRESHOLD = 0.8
+const SWITCH_THRESHOLD_SAND = 0.8
+const SWITCH_THRESHOLD_SNAKE = 0.9
 const SWITCH_TIME = 2000
 const PIXEL_DISTANCE = 5
 const FORCE_MULTIPLIER = 0.7
@@ -20,7 +21,7 @@ const RADIUS_GROWTH_2 = 70
 const RADIUS_DECAY = 2
 const EFFECT_TYPES = {
     SAND: 0,
-    CHANGE: 1,
+    SNAKE: 1,
 }
 window.addEventListener("load", function () {
     const effect = new Effect()
@@ -65,6 +66,8 @@ class Effect {
         this.nextImgI = 1
         this.lastSwitchTime = -Infinity
         this.canvas = document.getElementsByTagName("canvas")[0]
+        this.sandEl = document.getElementById("sand")
+        this.snakeEl = document.getElementById("snake")
         this.progressBarEl = document.getElementById("progressBar")
         this.progressEl = document.getElementById("progress")
         this.percentageEl = document.getElementById("percentage")
@@ -128,6 +131,32 @@ class Effect {
         this.canvas.addEventListener("firstmove", () => {
             document.getElementById("touchHint").remove()
         })
+        this.sandEl.addEventListener("click", () => {
+            if (this.type === EFFECT_TYPES.SAND) return
+            this.type = EFFECT_TYPES.SAND
+            this.snakeEl.classList.remove("buttonActive")
+            this.snakeEl.classList.add("buttonInactive")
+            this.sandEl.classList.remove("buttonInactive")
+            this.sandEl.classList.add("buttonActive")
+            this.imgs[this.nextImgI].style.display = "block"
+            this.parts.forEach((part) => {
+                part.useCurrentImgColor()
+            })
+        })
+        this.snakeEl.addEventListener("click", () => {
+            if (this.type === EFFECT_TYPES.SNAKE) return
+            this.type = EFFECT_TYPES.SNAKE
+            this.sandEl.classList.remove("buttonActive")
+            this.sandEl.classList.add("buttonInactive")
+            this.snakeEl.classList.remove("buttonInactive")
+            this.snakeEl.classList.add("buttonActive")
+            for (let i = 0; i < this.imgs.length; i++) {
+                this.imgs[i].style.display = "none"
+            }
+            this.parts.forEach((part) => {
+                part.wasInteracted = false
+            })
+        })
     }
     _handleMove(event) {
         this.mouse.x = event.touches ? event.touches[0].clientX : event.clientX
@@ -181,13 +210,21 @@ class Effect {
     _checkImgSwitch() {
         const usingNextCount = this.parts.filter((part) => {
             if (!part.wasInteracted) return
+            if (this.type === EFFECT_TYPES.SNAKE) return part.wasInteracted
             return (
                 Math.abs(part.x - part.originX) > PIXEL_DISTANCE ||
                 Math.abs(part.y - part.originY) > PIXEL_DISTANCE
             )
         }).length
-        const progress = usingNextCount / this.parts.length / SWITCH_THRESHOLD
-        if (progress >= 0.99) {
+        const threshold =
+            this.type === EFFECT_TYPES.SAND
+                ? SWITCH_THRESHOLD_SAND
+                : SWITCH_THRESHOLD_SNAKE
+        const progress = usingNextCount / this.parts.length / threshold
+        if (
+            progress >= 0.99 &&
+            this.lastSwitchTime + SWITCH_TIME + 300 < performance.now()
+        ) {
             this.lastSwitchTime = performance.now()
             this.parts.forEach((part) => (part.wasInteracted = false))
         }
@@ -198,12 +235,16 @@ class Effect {
             if (this.firstTime) {
                 this.parts.forEach((part) => {
                     part.useNextImgColor()
-                    part.reset()
+                    if (this.type === EFFECT_TYPES.SAND) {
+                        part.reset()
+                    }
                     part.wasInteracted = false
                 })
                 this.imgs[this.nextImgI].style.display = "none"
                 this.nextImgI = (this.nextImgI + 1) % this.imgs.length
-                this.imgs[this.nextImgI].style.display = "block"
+                if (this.type === EFFECT_TYPES.SAND) {
+                    this.imgs[this.nextImgI].style.display = "block"
+                }
                 this.mouse.radiusSq = 1
                 this.mouse.maxRadiusSq = RADIUS ** 2
                 this.mouse.radiusGrowth = RADIUS_GROWTH
@@ -213,12 +254,21 @@ class Effect {
             this.progressEl.style.width = `100%`
             this.percentageEl.innerText = "Готово!"
             this.firstTime = true
-            this.mouse.maxRadiusSq = 400 ** 2
-            this.mouse.radiusGrowth = RADIUS_GROWTH_2
-            this._handleMove({
-                clientX: window.innerWidth / 2 + 1,
-                clientY: window.innerHeight / 2 + 1,
-            })
+            if (this.type === EFFECT_TYPES.SAND) {
+                this.mouse.maxRadiusSq = 400 ** 2
+                this.mouse.radiusGrowth = RADIUS_GROWTH_2
+                this._handleMove({
+                    clientX: window.innerWidth / 2 + 1,
+                    clientY: window.innerHeight / 2 + 1,
+                })
+            } else {
+                this.parts.forEach((part) => {
+                    if (Math.random() < 1 / 20) part.useNextImgColor()
+                })
+                this.mouse.radiusSq = 1
+                this.mouse.maxRadiusSq = RADIUS ** 2
+                this.mouse.radiusGrowth = RADIUS_GROWTH
+            }
         }
     }
 }
@@ -250,7 +300,7 @@ class Particle {
         if (this.distanceSquared < this.effect.mouse.radiusSq) {
             if (this.effect.lastSwitchTime + SWITCH_TIME < performance.now()) {
                 this.wasInteracted = true
-                if (this.type === EFFECT_TYPES.CHANGE) {
+                if (this.effect.type === EFFECT_TYPES.SNAKE) {
                     this.useNextImgColor()
                 }
             }
@@ -265,10 +315,15 @@ class Particle {
         this.vy *= FRICTION
         this.x += this.vx
         this.y += this.vy
-        if (this.type === EFFECT_TYPES.CHANGE) {
-            this.x += this.originX - this.x
-            this.y += this.originY - this.y
+        if (this.effect.type === EFFECT_TYPES.SNAKE) {
+            this.x += (this.originX - this.x) * this.ease
+            this.y += (this.originY - this.y) * this.ease
         }
+    }
+    useCurrentImgColor() {
+        let imgI = this.effect.nextImgI - 1
+        if (imgI < 0) imgI = this.effect.imgs.length - 1
+        this.colors = this.effect.partSets[imgI][this.i].colors
     }
     useNextImgColor() {
         this.colors = this.effect.partSets[this.effect.nextImgI][this.i].colors
