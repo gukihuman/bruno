@@ -16,7 +16,7 @@ const FORCE_MULTIPLIER = 0.7
 const FRICTION = 0.9
 const RADIUS = 50
 const RADIUS_GROWTH = 7
-const RADIUS_GROWTH_2 = 30
+const RADIUS_GROWTH_2 = 70
 const RADIUS_DECAY = 2
 const EFFECT_TYPES = {
     SAND: 0,
