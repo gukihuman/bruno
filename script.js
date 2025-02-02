@@ -225,7 +225,7 @@ class Particle {
         this.i = i
         this.vx = 0
         this.vy = 0
-        this.ease = 0.7
+        this.ease = 0.05
         this.friction = 0.85
         this.dx = 0
         this.dy = 0
@@ -254,8 +254,8 @@ class Particle {
         // apply motion
         this.vx *= this.friction
         this.vy *= this.friction
-        this.x += this.vx * this.ease
-        this.y += this.vy * this.ease
+        this.x += this.vx
+        this.y += this.vy
         if (this.type === EFFECT_TYPES.CHANGE) {
             this.x += this.originX - this.x
             this.y += this.originY - this.y
