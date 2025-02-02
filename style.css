@@ -67,7 +67,6 @@ body {
     justify-content: center;
     align-items: center;
     width: 100%;
-    max-width: 420px;
     height: 100vh;
     overflow: hidden;
     padding-bottom: 30px;
@@ -107,13 +106,14 @@ img {
     width: 400px;
     margin: 8px;
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     gap: 8px;
 }
 #typeContainer {
     background-color: var(--medium);
     border-radius: 12px;
     display: flex;
+    height: 38px;
     flex-direction: row;
     border-radius: 12px;
     align-items: center;
@@ -125,6 +125,7 @@ img {
     padding: 4px 0px 6px;
     height: 100%;
     width: 75px;
+    flex-grow: 1;
 }
 .buttonActive {
     border-radius: 4px;
@@ -132,6 +133,7 @@ img {
     padding: 4px 0px 6px;
     width: 75px;
     height: 100%;
+    flex-grow: 1;
 }
 .buttonDefault {
     display: flex;
@@ -175,6 +177,7 @@ img {
     }
     #footerWrapper {
         width: 420px;
+        flex-direction: row;
     }
     #instagram:hover {
         filter: brightness(1.3);
