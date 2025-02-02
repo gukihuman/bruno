@@ -11,12 +11,12 @@ const WIDTH = 420 + EDGE * 2
 const HEIGHT = 660 + EDGE * 2
 const SWITCH_THRESHOLD = 0.8
 const SWITCH_TIME = 2000
-const PIXEL_DISTANCE = 8
+const PIXEL_DISTANCE = 5
 const FORCE_MULTIPLIER = 0.7
 const FRICTION = 0.9
 const RADIUS = 50
-const RADIUS_GROWTH = 5
-const RADIUS_GROWTH_2 = 15
+const RADIUS_GROWTH = 7
+const RADIUS_GROWTH_2 = 20
 const RADIUS_DECAY = 2
 const EFFECT_TYPES = {
     SAND: 0,
