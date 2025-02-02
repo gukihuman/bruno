@@ -35,6 +35,7 @@ body {
     height: 24px;
     z-index: 50;
     padding: 12px;
+    padding-top: 16px;
 }
 #progressBar {
     background-color: var(--dark);
@@ -55,7 +56,7 @@ body {
 #percentage {
     color: white;
     position: absolute;
-    top: 50%;
+    top: 54%;
     left: 50%;
     transform: translate(-40%, -50%);
     font-family: "Rubik", serif;
@@ -91,6 +92,8 @@ img {
     bottom: 0px;
     display: flex;
     justify-content: center;
+    padding: 8px;
+    padding-bottom: 12px;
 }
 #instagram {
     background-color: var(--dark);
@@ -99,12 +102,11 @@ img {
     gap: 6px;
     width: 400px;
     border-radius: 12px;
-    padding: 4px 0px 8px;
+    padding: 2px 0px 6px;
     align-items: center;
     justify-content: center;
     font-family: "Rubik", serif;
     text-decoration: none;
-    margin: 8px;
     color: var(--super-light);
     outline: 3px solid transparent;
 }
