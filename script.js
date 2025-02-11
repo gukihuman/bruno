@@ -26,11 +26,11 @@ const EFFECT_TYPES = {
 }
 window.addEventListener("load", function () {
   const effect = new Effect()
-  const monitor = new PerformanceMonitor(60)
+  // const monitor = new PerformanceMonitor(60)
   function animate() {
-    monitor.start()
+    // monitor.start()
     effect.update()
-    monitor.end()
+    // monitor.end()
     requestAnimationFrame(animate)
   }
   animate()
